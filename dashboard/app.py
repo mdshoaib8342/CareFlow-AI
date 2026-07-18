@@ -13,22 +13,33 @@ Requires: careflow.db to already exist in the project root
 
 import streamlit as st
 import pandas as pd
-import sqlite3
 import plotly.express as px
 import plotly.graph_objects as go
+import sys
 import os
+from sqlalchemy import create_engine, text
+
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
+from src import config
 
 st.set_page_config(page_title="CareFlow AI Dashboard", layout="wide", page_icon="🏥")
 
-DB_PATH = "careflow.db"
+
+@st.cache_resource
+def get_engine():
+    return create_engine(config.DB_CONNECTION_STRING)
 
 
 @st.cache_data(ttl=300)
 def load_data():
-    if not os.path.exists(DB_PATH):
+    engine = get_engine()
+    try:
+        with engine.connect() as conn:
+            conn.execute(text("SELECT 1"))
+    except Exception:
         return None
 
-    conn = sqlite3.connect(DB_PATH)
+    conn = engine
 
     kpis = pd.read_sql("""
         SELECT COUNT(*) as total_admissions,
@@ -61,7 +72,6 @@ def load_data():
 
     resource_plan = pd.read_sql("SELECT * FROM vw_latest_resource_plan", conn)
 
-    conn.close()
     return {
         "kpis": kpis, "dept_summary": dept_summary, "los_compare": los_compare,
         "readmit_risk": readmit_risk, "pathway_compare": pathway_compare,
@@ -75,8 +85,9 @@ st.title("🏥 CareFlow AI — Hospital Operations Dashboard")
 
 if data is None:
     st.error(
-        "careflow.db not found. Run `python src/database/db_utils.py` "
-        "from the project root first to build the database."
+        "Could not connect to the PostgreSQL database, or it hasn't been populated yet. "
+        "Make sure PostgreSQL is running and the CAREFLOW_DB_* environment variables are "
+        "set correctly, then run `python src/database/db_utils.py` from the project root."
     )
     st.stop()
 

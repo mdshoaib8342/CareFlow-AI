@@ -15,8 +15,22 @@ import os
 DATA_RAW_PATH = "data/raw/hospital_admissions.csv"
 MODELS_SAVED_DIR = "models_saved"
 FIGURES_DIR = "notebooks/figures"
-DB_PATH = "careflow.db"
 SCHEMA_PATH = "src/database/schema.sql"
+
+# ---------------------------------------------------------------
+# Database connection (PostgreSQL)
+# ---------------------------------------------------------------
+# Read from environment variables with local-dev defaults, rather than
+# hardcoding credentials - standard practice even for a portfolio project,
+# and means production deployment only requires setting env vars, no
+# code changes. Set these in a .env file (gitignored) or your shell.
+DB_HOST = os.environ.get("CAREFLOW_DB_HOST", "localhost")
+DB_PORT = os.environ.get("CAREFLOW_DB_PORT", "5432")
+DB_NAME = os.environ.get("CAREFLOW_DB_NAME", "careflow")
+DB_USER = os.environ.get("CAREFLOW_DB_USER", "postgres")
+DB_PASSWORD = os.environ.get("CAREFLOW_DB_PASSWORD", "postgres")
+
+DB_CONNECTION_STRING = f"postgresql+psycopg2://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
 
 LOS_MODEL_PATH = os.path.join(MODELS_SAVED_DIR, "los_xgboost_model.json")
 READMISSION_MODEL_PATH = os.path.join(MODELS_SAVED_DIR, "readmission_xgboost_model.json")

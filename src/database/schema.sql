@@ -12,17 +12,17 @@
 --      you can audit "what did the model think on this date" - essential
 --      for tracking model drift over time in a real deployment.
 --
--- Written in SQLite-compatible syntax. Portable to PostgreSQL with minor
--- changes (SERIAL instead of INTEGER PRIMARY KEY AUTOINCREMENT, etc.)
+-- Written in PostgreSQL syntax.
 -- ============================================================================
 
-PRAGMA foreign_keys = ON;
+-- Foreign keys are enforced by default in PostgreSQL (unlike SQLite, where
+-- PRAGMA foreign_keys = ON was needed) - no equivalent statement required.
 
 -- ----------------------------------------------------------------------------
 -- Dimension table: departments
 -- ----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS departments (
-    department_id     INTEGER PRIMARY KEY AUTOINCREMENT,
+    department_id     SERIAL PRIMARY KEY,
     department_name    TEXT NOT NULL UNIQUE,
     nurse_ratio         REAL NOT NULL,        -- required nurses per bed
     bed_daily_cost      REAL NOT NULL,        -- operating cost per bed/day
@@ -67,7 +67,7 @@ CREATE INDEX IF NOT EXISTS idx_admissions_dates       ON admissions(admission_da
 -- Prediction tables: one per model, kept separate from ground truth
 -- ----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS los_predictions (
-    prediction_id     INTEGER PRIMARY KEY AUTOINCREMENT,
+    prediction_id     SERIAL PRIMARY KEY,
     admission_id        TEXT NOT NULL REFERENCES admissions(admission_id),
     predicted_los          REAL NOT NULL,
     model_version             TEXT NOT NULL,
@@ -76,7 +76,7 @@ CREATE TABLE IF NOT EXISTS los_predictions (
 CREATE INDEX IF NOT EXISTS idx_los_pred_admission ON los_predictions(admission_id);
 
 CREATE TABLE IF NOT EXISTS readmission_predictions (
-    prediction_id     INTEGER PRIMARY KEY AUTOINCREMENT,
+    prediction_id     SERIAL PRIMARY KEY,
     admission_id        TEXT NOT NULL REFERENCES admissions(admission_id),
     predicted_probability   REAL NOT NULL,
     predicted_label            INTEGER NOT NULL CHECK (predicted_label IN (0, 1)),
@@ -86,7 +86,7 @@ CREATE TABLE IF NOT EXISTS readmission_predictions (
 CREATE INDEX IF NOT EXISTS idx_readmit_pred_admission ON readmission_predictions(admission_id);
 
 CREATE TABLE IF NOT EXISTS discharge_pathway_predictions (
-    prediction_id     INTEGER PRIMARY KEY AUTOINCREMENT,
+    prediction_id     SERIAL PRIMARY KEY,
     admission_id        TEXT NOT NULL REFERENCES admissions(admission_id),
     predicted_pathway      TEXT NOT NULL,
     confidence                REAL NOT NULL,
@@ -99,7 +99,7 @@ CREATE INDEX IF NOT EXISTS idx_pathway_pred_admission ON discharge_pathway_predi
 -- resource_allocation_plans: output of Module 4's LP optimizer
 -- ----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS resource_allocation_plans (
-    plan_id            INTEGER PRIMARY KEY AUTOINCREMENT,
+    plan_id            SERIAL PRIMARY KEY,
     department_id        INTEGER NOT NULL REFERENCES departments(department_id),
     plan_date               DATE NOT NULL,
     predicted_demand           INTEGER NOT NULL,
@@ -114,7 +114,7 @@ CREATE INDEX IF NOT EXISTS idx_resource_plan_dept_date ON resource_allocation_pl
 -- Views: convenience layers for Power BI / reporting, so the dashboard
 -- queries a clean flat view instead of joining 6 tables every time.
 -- ----------------------------------------------------------------------------
-CREATE VIEW IF NOT EXISTS vw_admissions_full AS
+CREATE OR REPLACE VIEW vw_admissions_full AS
 SELECT
     a.admission_id,
     a.patient_id,
@@ -135,18 +135,18 @@ FROM admissions a
 JOIN patients p ON a.patient_id = p.patient_id
 JOIN departments d ON a.department_id = d.department_id;
 
-CREATE VIEW IF NOT EXISTS vw_department_summary AS
+CREATE OR REPLACE VIEW vw_department_summary AS
 SELECT
     d.department_name,
     COUNT(a.admission_id)             AS total_admissions,
-    ROUND(AVG(a.length_of_stay), 2)    AS avg_length_of_stay,
-    ROUND(AVG(a.readmitted_30_days) * 100, 1) AS readmission_rate_pct,
-    ROUND(AVG(a.comorbidity_count), 2)          AS avg_comorbidity_count
+    ROUND(AVG(a.length_of_stay)::numeric, 2)    AS avg_length_of_stay,
+    ROUND((AVG(a.readmitted_30_days) * 100)::numeric, 1) AS readmission_rate_pct,
+    ROUND(AVG(a.comorbidity_count)::numeric, 2)          AS avg_comorbidity_count
 FROM admissions a
 JOIN departments d ON a.department_id = d.department_id
 GROUP BY d.department_name;
 
-CREATE VIEW IF NOT EXISTS vw_latest_resource_plan AS
+CREATE OR REPLACE VIEW vw_latest_resource_plan AS
 SELECT
     d.department_name,
     r.plan_date,
@@ -154,7 +154,7 @@ SELECT
     r.beds_allocated,
     r.nurses_allocated,
     r.shortage,
-    ROUND(100.0 * (r.predicted_demand - r.shortage) / r.predicted_demand, 1) AS pct_demand_met
+    ROUND((100.0 * (r.predicted_demand - r.shortage) / r.predicted_demand)::numeric, 1) AS pct_demand_met
 FROM resource_allocation_plans r
 JOIN departments d ON r.department_id = d.department_id
 WHERE r.plan_date = (SELECT MAX(plan_date) FROM resource_allocation_plans);

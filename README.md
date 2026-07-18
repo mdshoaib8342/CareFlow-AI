@@ -25,7 +25,7 @@ Raw hospital admissions data
 └────────────────────────────┘
         │
         ▼
-   SQLite database (ground truth + predictions, versioned)
+   PostgreSQL database (ground truth + predictions, versioned)
         │
         ▼
    Streamlit + Plotly interactive dashboard
@@ -59,7 +59,7 @@ Both of these are documented as genuine debugging stories, not smoothed over —
 - **Deep Learning:** PyTorch (1D CNN)
 - **Optimization:** PuLP (Linear Programming)
 - **Data:** Pandas, NumPy, Faker (synthetic data generation)
-- **Database:** SQLite + SQLAlchemy-style raw SQL
+- **Database:** PostgreSQL, SQLAlchemy
 - **Dashboard:** Streamlit + Plotly
 - **Testing:** pytest
 
@@ -96,7 +96,20 @@ CareFlow-AI/
 
 ## Setup & Running the Pipeline
 
-Trained models and a populated database are committed to this repo, so **you can jump straight to the dashboard** without training anything:
+**Database:** this project uses PostgreSQL (not SQLite). Install and start it first:
+
+```bash
+brew install postgresql@16
+brew services start postgresql@16
+createdb careflow
+```
+
+Set your database password as an environment variable (or use the default below for local dev):
+```bash
+export CAREFLOW_DB_PASSWORD=postgres
+```
+
+Trained models are committed to this repo, so once the database is populated you can jump straight to the dashboard without retraining anything:
 
 ```bash
 git clone https://github.com/<your-username>/CareFlow-AI.git
@@ -104,10 +117,15 @@ cd CareFlow-AI
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
+
+# Build and populate the database (loads data + runs real inference from trained models)
+python src/database/db_utils.py
+
+# Launch the dashboard
 streamlit run dashboard/app.py
 ```
 
-To regenerate everything from scratch (new synthetic data, retrained models, rebuilt database), run each stage in order:
+To regenerate everything from scratch (new synthetic data, retrained models), run each stage in order:
 
 ```bash
 # 1. Generate synthetic hospital data
@@ -135,11 +153,12 @@ pytest tests/ -v
 
 ## macOS / Apple Silicon Setup Notes
 
-If you're on an M-series Mac, two dependencies need a native library installed separately (their Python packages bundle Intel-only binaries):
+If you're on an M-series Mac, three native (non-pip) dependencies are needed:
 
 ```bash
-brew install libomp   # required for XGBoost
-brew install cbc      # required for PuLP's linear programming solver
+brew install postgresql@16   # the database itself
+brew install libomp           # required for xgboost
+brew install cbc              # required for pulp's linear programming solver
 ```
 
 ## Design Decisions & Lessons Learned
@@ -154,7 +173,6 @@ brew install cbc      # required for PuLP's linear programming solver
 
 - Persist fitted encoders (e.g. via `joblib`) instead of refitting at inference time, for true production-safe inference on unseen categories
 - Add MLflow or similar for experiment tracking across model versions
-- Replace SQLite with PostgreSQL for concurrent multi-user access
 - Add confidence intervals / prediction intervals to LOS forecasts
 - Deploy the optimizer as a scheduled job (e.g. daily) rather than a manual script run
 
