@@ -1,13 +1,13 @@
 """
 CareFlow AI - Operations Dashboard (Streamlit + Plotly)
 --------------------------------------------------------------
-Reads directly from careflow.db (populated by src/database/db_utils.py)
-and visualizes: KPIs, department breakdown, LOS prediction accuracy,
-readmission risk distribution, discharge pathway prediction accuracy,
-and the current resource allocation plan.
+Reads directly from the PostgreSQL database (populated by
+src/database/db_utils.py) and visualizes: KPIs, department breakdown,
+LOS prediction accuracy, readmission risk distribution, discharge
+pathway prediction accuracy, and the current resource allocation plan.
 
 Run: streamlit run dashboard/app.py
-Requires: careflow.db to already exist in the project root
+Requires: a running PostgreSQL instance, already populated
           (run `python src/database/db_utils.py` first)
 """
 
