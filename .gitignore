@@ -1,0 +1,39 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyc
+.pytest_cache/
+
+# Virtual environment
+.venv/
+venv/
+env/
+
+# Environment variables / secrets
+.env
+
+# Jupyter
+.ipynb_checkpoints/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+
+# Data & model artifacts: intentionally COMMITTED (not gitignored) so
+# the repo works out-of-the-box for anyone browsing/cloning it, without
+# requiring a full pipeline run first. All file sizes here are small
+# (largest is ~2.5MB for careflow.db) - this decision would need
+# revisiting if the dataset or models were much larger, or if this were
+# a production repo rather than a portfolio project.
+# data/raw/*.csv
+# models_saved/*.json
+# models_saved/*.pt
+# careflow.db
+
+# Generated figures are intentionally NOT ignored - they're small PNGs
+# used directly in README.md so the project is browsable on GitHub
+# without anyone needing to clone and run the full pipeline first.
