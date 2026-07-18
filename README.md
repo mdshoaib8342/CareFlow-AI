@@ -4,10 +4,6 @@ CareFlow AI is an end-to-end system that combines **machine learning, deep learn
 
 This isn't four disconnected models — it's a pipeline where **predictions feed directly into an optimization layer** that makes an actual operational decision (bed/staff allocation), backed by a relational database and an interactive dashboard.
 
-## Live Demo
-
-[Add your Streamlit Community Cloud link here once deployed]
-
 ## Architecture
 
 ```
