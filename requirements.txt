@@ -1,0 +1,31 @@
+# CareFlow AI - Python dependencies
+# Pinned to versions verified working together on Python 3.14 (Apple Silicon).
+# macOS users also need two native libraries installed separately (not pip
+# packages) - see README's "macOS / Apple Silicon Setup Notes" section:
+#   brew install libomp   (required for xgboost)
+#   brew install cbc      (required for pulp's LP solver)
+
+# Data handling
+pandas==3.0.2
+numpy==2.4.4
+faker==40.31.0
+
+# Machine learning
+scikit-learn==1.8.0
+xgboost==3.3.0
+
+# Deep learning (Module 3: discharge pathway CNN)
+torch==2.13.0
+
+# Linear programming (Module 4: resource optimization)
+pulp==3.3.2
+
+# Visualization
+matplotlib==3.10.8
+plotly==6.9.0
+
+# Dashboard
+streamlit==1.59.2
+
+# Testing
+pytest==9.1.1
