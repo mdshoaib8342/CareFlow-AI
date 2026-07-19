@@ -195,14 +195,22 @@ def populate_discharge_pathway_predictions(engine, df: pd.DataFrame):
 
 
 def populate_resource_allocation(engine, plan_date: str = None):
-    """Re-runs Module 4's LP optimizer and stores the resulting plan."""
+    """Re-runs Module 4's LP optimizer and stores the resulting plan.
+
+    Passes `engine` through so department parameters (nurse ratios, bed
+    costs, service levels) are read live from the departments table -
+    the real source of truth - rather than from config.py's seed values."""
     from src.optimization.resource_optimizer import (
-        compute_daily_department_demand, build_and_solve_lp
+        compute_daily_department_demand, build_and_solve_lp, get_department_params
     )
 
     df = pd.read_csv(DATA_PATH)
     demand = compute_daily_department_demand(df)
-    prob, beds, nurses, shortage, departments = build_and_solve_lp(demand)
+
+    nurse_ratio, bed_cost, min_service_level = get_department_params(engine)
+    prob, beds, nurses, shortage, departments = build_and_solve_lp(
+        demand, nurse_ratio, bed_cost, min_service_level
+    )
 
     plan_date = plan_date or datetime.now().date()
 
